@@ -1,0 +1,1894 @@
+{
+  "source": "https://github.com/1Password/onepassword-sdk-go/blob/5866f43111ffeee5952e43a13da1aafef98200c8/types.go",
+  "enums": {
+    "GroupType": [
+      [
+        "Owners",
+        "owners"
+      ],
+      [
+        "Administrators",
+        "administrators"
+      ],
+      [
+        "Recovery",
+        "recovery"
+      ],
+      [
+        "ExternalAccountManagers",
+        "externalAccountManagers"
+      ],
+      [
+        "TeamMembers",
+        "teamMembers"
+      ],
+      [
+        "UserDefined",
+        "userDefined"
+      ],
+      [
+        "Unsupported",
+        "unsupported"
+      ]
+    ],
+    "GroupState": [
+      [
+        "Active",
+        "active"
+      ],
+      [
+        "Deleted",
+        "deleted"
+      ],
+      [
+        "Unsupported",
+        "unsupported"
+      ]
+    ],
+    "VaultAccessorType": [
+      [
+        "User",
+        "user"
+      ],
+      [
+        "Group",
+        "group"
+      ]
+    ],
+    "ItemCategory": [
+      [
+        "Login",
+        "Login"
+      ],
+      [
+        "SecureNote",
+        "SecureNote"
+      ],
+      [
+        "CreditCard",
+        "CreditCard"
+      ],
+      [
+        "CryptoWallet",
+        "CryptoWallet"
+      ],
+      [
+        "Identity",
+        "Identity"
+      ],
+      [
+        "Password",
+        "Password"
+      ],
+      [
+        "Document",
+        "Document"
+      ],
+      [
+        "APICredentials",
+        "ApiCredentials"
+      ],
+      [
+        "BankAccount",
+        "BankAccount"
+      ],
+      [
+        "Database",
+        "Database"
+      ],
+      [
+        "DriverLicense",
+        "DriverLicense"
+      ],
+      [
+        "Email",
+        "Email"
+      ],
+      [
+        "MedicalRecord",
+        "MedicalRecord"
+      ],
+      [
+        "Membership",
+        "Membership"
+      ],
+      [
+        "OutdoorLicense",
+        "OutdoorLicense"
+      ],
+      [
+        "Passport",
+        "Passport"
+      ],
+      [
+        "Rewards",
+        "Rewards"
+      ],
+      [
+        "Router",
+        "Router"
+      ],
+      [
+        "Server",
+        "Server"
+      ],
+      [
+        "SSHKey",
+        "SshKey"
+      ],
+      [
+        "SocialSecurityNumber",
+        "SocialSecurityNumber"
+      ],
+      [
+        "SoftwareLicense",
+        "SoftwareLicense"
+      ],
+      [
+        "Person",
+        "Person"
+      ],
+      [
+        "Unsupported",
+        "Unsupported"
+      ]
+    ],
+    "ItemFieldType": [
+      [
+        "Text",
+        "Text"
+      ],
+      [
+        "Concealed",
+        "Concealed"
+      ],
+      [
+        "CreditCardType",
+        "CreditCardType"
+      ],
+      [
+        "CreditCardNumber",
+        "CreditCardNumber"
+      ],
+      [
+        "Phone",
+        "Phone"
+      ],
+      [
+        "URL",
+        "Url"
+      ],
+      [
+        "TOTP",
+        "Totp"
+      ],
+      [
+        "Email",
+        "Email"
+      ],
+      [
+        "Reference",
+        "Reference"
+      ],
+      [
+        "SSHKey",
+        "SshKey"
+      ],
+      [
+        "Menu",
+        "Menu"
+      ],
+      [
+        "MonthYear",
+        "MonthYear"
+      ],
+      [
+        "Address",
+        "Address"
+      ],
+      [
+        "Date",
+        "Date"
+      ],
+      [
+        "Unsupported",
+        "Unsupported"
+      ]
+    ],
+    "AutofillBehavior": [
+      [
+        "AnywhereOnWebsite",
+        "AnywhereOnWebsite"
+      ],
+      [
+        "ExactDomain",
+        "ExactDomain"
+      ],
+      [
+        "Never",
+        "Never"
+      ]
+    ],
+    "ItemState": [
+      [
+        "Active",
+        "active"
+      ],
+      [
+        "Archived",
+        "archived"
+      ]
+    ],
+    "ItemShareDuration": [
+      [
+        "OneHour",
+        "OneHour"
+      ],
+      [
+        "OneDay",
+        "OneDay"
+      ],
+      [
+        "SevenDays",
+        "SevenDays"
+      ],
+      [
+        "FourteenDays",
+        "FourteenDays"
+      ],
+      [
+        "ThirtyDays",
+        "ThirtyDays"
+      ]
+    ],
+    "AllowedType": [
+      [
+        "Authenticated",
+        "Authenticated"
+      ],
+      [
+        "Public",
+        "Public"
+      ]
+    ],
+    "AllowedRecipientType": [
+      [
+        "Email",
+        "Email"
+      ],
+      [
+        "Domain",
+        "Domain"
+      ]
+    ],
+    "VaultType": [
+      [
+        "Personal",
+        "personal"
+      ],
+      [
+        "Everyone",
+        "everyone"
+      ],
+      [
+        "Transfer",
+        "transfer"
+      ],
+      [
+        "UserCreated",
+        "userCreated"
+      ],
+      [
+        "Unsupported",
+        "unsupported"
+      ]
+    ],
+    "SeparatorType": [
+      [
+        "Digits",
+        "digits"
+      ],
+      [
+        "DigitsAndSymbols",
+        "digitsAndSymbols"
+      ],
+      [
+        "Spaces",
+        "spaces"
+      ],
+      [
+        "Hyphens",
+        "hyphens"
+      ],
+      [
+        "Underscores",
+        "underscores"
+      ],
+      [
+        "Periods",
+        "periods"
+      ],
+      [
+        "Commas",
+        "commas"
+      ]
+    ],
+    "WordListType": [
+      [
+        "FullWords",
+        "fullWords"
+      ],
+      [
+        "Syllables",
+        "syllables"
+      ],
+      [
+        "ThreeLetters",
+        "threeLetters"
+      ]
+    ]
+  },
+  "records": {
+    "AddressFieldDetails": [
+      {
+        "name": "street",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "city",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "country",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "zip",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "state",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "DocumentCreateParams": [
+      {
+        "name": "name",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "content",
+        "type": "[]byte",
+        "optional": false
+      }
+    ],
+    "EnvironmentVariable": [
+      {
+        "name": "name",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "masked",
+        "type": "bool",
+        "optional": false
+      }
+    ],
+    "FileAttributes": [
+      {
+        "name": "name",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "size",
+        "type": "uint32",
+        "optional": false
+      }
+    ],
+    "FileCreateParams": [
+      {
+        "name": "name",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "content",
+        "type": "[]byte",
+        "optional": false
+      },
+      {
+        "name": "sectionId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fieldId",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "GeneratePasswordResponse": [
+      {
+        "name": "password",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "GetVariablesResponse": [
+      {
+        "name": "variables",
+        "type": "[]EnvironmentVariable",
+        "optional": false
+      }
+    ],
+    "VaultAccess": [
+      {
+        "name": "vaultUuid",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "accessorType",
+        "type": "VaultAccessorType",
+        "optional": false
+      },
+      {
+        "name": "accessorUuid",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "permissions",
+        "type": "uint32",
+        "optional": false
+      }
+    ],
+    "Group": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "groupType",
+        "type": "GroupType",
+        "optional": false
+      },
+      {
+        "name": "state",
+        "type": "GroupState",
+        "optional": false
+      },
+      {
+        "name": "vaultAccess",
+        "type": "[]VaultAccess",
+        "optional": true
+      }
+    ],
+    "GroupAccess": [
+      {
+        "name": "groupId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "permissions",
+        "type": "uint32",
+        "optional": false
+      }
+    ],
+    "GroupGetParams": [
+      {
+        "name": "vaultPermissions",
+        "type": "*bool",
+        "optional": true
+      }
+    ],
+    "GroupVaultAccess": [
+      {
+        "name": "vaultId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "groupId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "permissions",
+        "type": "uint32",
+        "optional": false
+      }
+    ],
+    "ItemField": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "sectionId",
+        "type": "*string",
+        "optional": true
+      },
+      {
+        "name": "fieldType",
+        "type": "ItemFieldType",
+        "optional": false
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "details",
+        "type": "*ItemFieldDetails",
+        "optional": true
+      }
+    ],
+    "ItemSection": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "Website": [
+      {
+        "name": "url",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "autofillBehavior",
+        "type": "AutofillBehavior",
+        "optional": false
+      }
+    ],
+    "ItemFile": [
+      {
+        "name": "attributes",
+        "type": "FileAttributes",
+        "optional": false
+      },
+      {
+        "name": "sectionId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fieldId",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "Item": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "category",
+        "type": "ItemCategory",
+        "optional": false
+      },
+      {
+        "name": "vaultId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fields",
+        "type": "[]ItemField",
+        "optional": false
+      },
+      {
+        "name": "sections",
+        "type": "[]ItemSection",
+        "optional": false
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "tags",
+        "type": "[]string",
+        "optional": false
+      },
+      {
+        "name": "websites",
+        "type": "[]Website",
+        "optional": false
+      },
+      {
+        "name": "version",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "files",
+        "type": "[]ItemFile",
+        "optional": false
+      },
+      {
+        "name": "document",
+        "type": "*FileAttributes",
+        "optional": true
+      },
+      {
+        "name": "createdAt",
+        "type": "time.Time",
+        "optional": false
+      },
+      {
+        "name": "updatedAt",
+        "type": "time.Time",
+        "optional": false
+      }
+    ],
+    "ItemCreateParams": [
+      {
+        "name": "category",
+        "type": "ItemCategory",
+        "optional": false
+      },
+      {
+        "name": "vaultId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fields",
+        "type": "[]ItemField",
+        "optional": true
+      },
+      {
+        "name": "sections",
+        "type": "[]ItemSection",
+        "optional": true
+      },
+      {
+        "name": "notes",
+        "type": "*string",
+        "optional": true
+      },
+      {
+        "name": "tags",
+        "type": "[]string",
+        "optional": true
+      },
+      {
+        "name": "websites",
+        "type": "[]Website",
+        "optional": true
+      },
+      {
+        "name": "files",
+        "type": "[]FileCreateParams",
+        "optional": true
+      },
+      {
+        "name": "document",
+        "type": "*DocumentCreateParams",
+        "optional": true
+      }
+    ],
+    "ItemOverview": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "category",
+        "type": "ItemCategory",
+        "optional": false
+      },
+      {
+        "name": "vaultId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "websites",
+        "type": "[]Website",
+        "optional": false
+      },
+      {
+        "name": "tags",
+        "type": "[]string",
+        "optional": false
+      },
+      {
+        "name": "createdAt",
+        "type": "time.Time",
+        "optional": false
+      },
+      {
+        "name": "updatedAt",
+        "type": "time.Time",
+        "optional": false
+      },
+      {
+        "name": "state",
+        "type": "ItemState",
+        "optional": false
+      }
+    ],
+    "ItemShareFiles": [
+      {
+        "name": "allowed",
+        "type": "bool",
+        "optional": false
+      },
+      {
+        "name": "maxSize",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "allowedTypes",
+        "type": "[]AllowedType",
+        "optional": true
+      },
+      {
+        "name": "allowedRecipientTypes",
+        "type": "[]AllowedRecipientType",
+        "optional": true
+      },
+      {
+        "name": "maxExpiry",
+        "type": "*ItemShareDuration",
+        "optional": true
+      },
+      {
+        "name": "defaultExpiry",
+        "type": "*ItemShareDuration",
+        "optional": true
+      },
+      {
+        "name": "maxViews",
+        "type": "*uint32",
+        "optional": true
+      }
+    ],
+    "ItemShareAccountPolicy": [
+      {
+        "name": "maxExpiry",
+        "type": "ItemShareDuration",
+        "optional": false
+      },
+      {
+        "name": "defaultExpiry",
+        "type": "ItemShareDuration",
+        "optional": false
+      },
+      {
+        "name": "maxViews",
+        "type": "*uint32",
+        "optional": true
+      },
+      {
+        "name": "allowedTypes",
+        "type": "[]AllowedType",
+        "optional": false
+      },
+      {
+        "name": "allowedRecipientTypes",
+        "type": "[]AllowedRecipientType",
+        "optional": false
+      },
+      {
+        "name": "files",
+        "type": "ItemShareFiles",
+        "optional": false
+      }
+    ],
+    "EmailRecipient": [
+      {
+        "name": "email",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "DomainRecipient": [
+      {
+        "name": "domain",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "ItemShareParams": [
+      {
+        "name": "recipients",
+        "type": "[]ValidRecipient",
+        "optional": true
+      },
+      {
+        "name": "expireAfter",
+        "type": "*ItemShareDuration",
+        "optional": true
+      },
+      {
+        "name": "oneTimeOnly",
+        "type": "bool",
+        "optional": false
+      }
+    ],
+    "ItemsDeleteAllResponse": [
+      {
+        "name": "individualResponses",
+        "type": "map[string]Response[struct{}, ItemUpdateFailureReason]",
+        "optional": false
+      }
+    ],
+    "ItemsGetAllResponse": [
+      {
+        "name": "individualResponses",
+        "type": "[]Response[Item, ItemsGetAllError]",
+        "optional": false
+      }
+    ],
+    "ItemsUpdateAllResponse": [
+      {
+        "name": "individualResponses",
+        "type": "[]Response[Item, ItemUpdateFailureReason]",
+        "optional": false
+      }
+    ],
+    "OtpFieldDetails": [
+      {
+        "name": "code",
+        "type": "*string",
+        "optional": true
+      },
+      {
+        "name": "errorMessage",
+        "type": "*string",
+        "optional": true
+      }
+    ],
+    "ResolvedReference": [
+      {
+        "name": "secret",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "itemId",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "vaultId",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "ResolveAllResponse": [
+      {
+        "name": "individualResponses",
+        "type": "map[string]Response[ResolvedReference, ResolveReferenceError]",
+        "optional": false
+      }
+    ],
+    "SshKeyAttributes": [
+      {
+        "name": "publicKey",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "fingerprint",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "keyType",
+        "type": "string",
+        "optional": false
+      }
+    ],
+    "Vault": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "vaultType",
+        "type": "VaultType",
+        "optional": false
+      },
+      {
+        "name": "activeItemCount",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "contentVersion",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "attributeVersion",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "access",
+        "type": "[]VaultAccess",
+        "optional": true
+      }
+    ],
+    "VaultCreateParams": [
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "description",
+        "type": "*string",
+        "optional": true
+      },
+      {
+        "name": "allowAdminsAccess",
+        "type": "*bool",
+        "optional": true
+      }
+    ],
+    "VaultGetParams": [
+      {
+        "name": "accessors",
+        "type": "*bool",
+        "optional": true
+      }
+    ],
+    "VaultListParams": [
+      {
+        "name": "decryptDetails",
+        "type": "*bool",
+        "optional": true
+      }
+    ],
+    "VaultOverview": [
+      {
+        "name": "id",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "description",
+        "type": "string",
+        "optional": false
+      },
+      {
+        "name": "vaultType",
+        "type": "VaultType",
+        "optional": false
+      },
+      {
+        "name": "activeItemCount",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "contentVersion",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "attributeVersion",
+        "type": "uint32",
+        "optional": false
+      },
+      {
+        "name": "createdAt",
+        "type": "time.Time",
+        "optional": false
+      },
+      {
+        "name": "updatedAt",
+        "type": "time.Time",
+        "optional": false
+      }
+    ],
+    "VaultUpdateParams": [
+      {
+        "name": "title",
+        "type": "*string",
+        "optional": true
+      },
+      {
+        "name": "description",
+        "type": "*string",
+        "optional": true
+      }
+    ],
+    "ItemStateFilter": [
+      {
+        "name": "active",
+        "type": "bool",
+        "optional": false
+      },
+      {
+        "name": "archived",
+        "type": "bool",
+        "optional": false
+      }
+    ],
+    "MemorablePasswordOptions": [
+      {
+        "name": "separatorType",
+        "type": "SeparatorType",
+        "optional": false
+      },
+      {
+        "name": "capitalize",
+        "type": "bool",
+        "optional": false
+      },
+      {
+        "name": "wordListType",
+        "type": "WordListType",
+        "optional": false
+      },
+      {
+        "name": "wordCount",
+        "type": "uint32",
+        "optional": false
+      }
+    ],
+    "PinPasswordOptions": [
+      {
+        "name": "length",
+        "type": "uint32",
+        "optional": false
+      }
+    ],
+    "RandomPasswordOptions": [
+      {
+        "name": "includeDigits",
+        "type": "bool",
+        "optional": false
+      },
+      {
+        "name": "includeSymbols",
+        "type": "bool",
+        "optional": false
+      },
+      {
+        "name": "length",
+        "type": "uint32",
+        "optional": false
+      }
+    ]
+  },
+  "unions": {
+    "ItemFieldDetails": {
+      "property": "content",
+      "variants": [
+        [
+          "Otp",
+          "Otp",
+          "OtpFieldDetails"
+        ],
+        [
+          "SshKey",
+          "SshKey",
+          "SshKeyAttributes"
+        ],
+        [
+          "Address",
+          "Address",
+          "AddressFieldDetails"
+        ]
+      ]
+    },
+    "ValidRecipient": {
+      "property": "content",
+      "variants": [
+        [
+          "Email",
+          "Email",
+          "EmailRecipient"
+        ],
+        [
+          "Domain",
+          "Domain",
+          "DomainRecipient"
+        ]
+      ]
+    },
+    "ItemListFilter": {
+      "property": "content",
+      "variants": [
+        [
+          "ByState",
+          "ByState",
+          "ItemStateFilter"
+        ]
+      ]
+    },
+    "PasswordRecipe": {
+      "property": "parameters",
+      "variants": [
+        [
+          "Memorable",
+          "Memorable",
+          "MemorablePasswordOptions"
+        ],
+        [
+          "Pin",
+          "Pin",
+          "PinPasswordOptions"
+        ],
+        [
+          "Random",
+          "Random",
+          "RandomPasswordOptions"
+        ]
+      ]
+    },
+    "ItemUpdateFailureReason": {
+      "property": "message",
+      "variants": [
+        [
+          "ItemValidationError",
+          "itemValidationError",
+          "String"
+        ],
+        [
+          "ItemStatusPermissionError",
+          "itemStatusPermissionError",
+          null
+        ],
+        [
+          "ItemStatusIncorrectItemVersion",
+          "itemStatusIncorrectItemVersion",
+          null
+        ],
+        [
+          "ItemStatusFileNotFound",
+          "itemStatusFileNotFound",
+          null
+        ],
+        [
+          "ItemStatusTooBig",
+          "itemStatusTooBig",
+          null
+        ],
+        [
+          "ItemNotFound",
+          "itemNotFound",
+          null
+        ],
+        [
+          "Internal",
+          "internal",
+          "String"
+        ]
+      ]
+    },
+    "ItemsGetAllError": {
+      "property": "message",
+      "variants": [
+        [
+          "ItemNotFound",
+          "itemNotFound",
+          null
+        ],
+        [
+          "Internal",
+          "internal",
+          "String"
+        ]
+      ]
+    },
+    "ResolveReferenceError": {
+      "property": "message",
+      "variants": [
+        [
+          "Parsing",
+          "parsing",
+          "String"
+        ],
+        [
+          "FieldNotFound",
+          "fieldNotFound",
+          null
+        ],
+        [
+          "VaultNotFound",
+          "vaultNotFound",
+          null
+        ],
+        [
+          "TooManyVaults",
+          "tooManyVaults",
+          null
+        ],
+        [
+          "ItemNotFound",
+          "itemNotFound",
+          null
+        ],
+        [
+          "TooManyItems",
+          "tooManyItems",
+          null
+        ],
+        [
+          "TooManyMatchingFields",
+          "tooManyMatchingFields",
+          null
+        ],
+        [
+          "NoMatchingSections",
+          "noMatchingSections",
+          null
+        ],
+        [
+          "IncompatibleTOTPQueryParameterField",
+          "incompatibleTOTPQueryParameterField",
+          null
+        ],
+        [
+          "UnableToGenerateTOTPCode",
+          "unableToGenerateTotpCode",
+          "String"
+        ],
+        [
+          "SSHKeyMetadataNotFound",
+          "sSHKeyMetadataNotFound",
+          null
+        ],
+        [
+          "UnsupportedFileFormat",
+          "unsupportedFileFormat",
+          null
+        ],
+        [
+          "IncompatibleSSHKeyQueryParameterField",
+          "incompatibleSshKeyQueryParameterField",
+          null
+        ],
+        [
+          "UnableToParsePrivateKey",
+          "unableToParsePrivateKey",
+          null
+        ],
+        [
+          "UnableToFormatPrivateKeyToOpenSSH",
+          "unableToFormatPrivateKeyToOpenSsh",
+          null
+        ],
+        [
+          "Other",
+          "other",
+          null
+        ]
+      ]
+    }
+  },
+  "permissions": {
+    "ArchiveItems": "256",
+    "CreateItems": "128",
+    "DeleteItems": "512",
+    "ExportItems": "4194304",
+    "ImportItems": "2097152",
+    "ManageVault": "2",
+    "NoAccess": "0",
+    "PrintItems": "8388608",
+    "ReadItems": "32",
+    "RecoverVault": "1",
+    "RevealItemPassword": "16",
+    "SendItems": "1048576",
+    "UpdateItems": "64",
+    "UpdateItemHistory": "1024"
+  },
+  "apis": {
+    "Secrets": [
+      {
+        "name": "resolve",
+        "wire": "SecretsResolve",
+        "result": "String",
+        "args": [
+          [
+            "String",
+            "secretReference",
+            "secret_reference"
+          ]
+        ],
+        "doc": "Resolve returns the secret the provided secret reference points to."
+      },
+      {
+        "name": "resolveAll",
+        "wire": "SecretsResolveAll",
+        "result": "ResolveAllResponse",
+        "args": [
+          [
+            "List<String>",
+            "secretReferences",
+            "secret_references"
+          ]
+        ],
+        "doc": "Resolve takes in a list of secret references and returns the secrets they point to or errors if any."
+      }
+    ],
+    "Items": [
+      {
+        "name": "create",
+        "wire": "ItemsCreate",
+        "result": "Item",
+        "args": [
+          [
+            "ItemCreateParams",
+            "params",
+            "params"
+          ]
+        ],
+        "doc": "Create a new item."
+      },
+      {
+        "name": "createAll",
+        "wire": "ItemsCreateAll",
+        "result": "ItemsUpdateAllResponse",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "List<ItemCreateParams>",
+            "params",
+            "params"
+          ]
+        ],
+        "doc": "Create items in batch, within a single vault."
+      },
+      {
+        "name": "get",
+        "wire": "ItemsGet",
+        "result": "Item",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "String",
+            "itemId",
+            "item_id"
+          ]
+        ],
+        "doc": "Get an item by vault and item ID."
+      },
+      {
+        "name": "getAll",
+        "wire": "ItemsGetAll",
+        "result": "ItemsGetAllResponse",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "List<String>",
+            "itemIds",
+            "item_ids"
+          ]
+        ],
+        "doc": "Get items by vault and their item IDs."
+      },
+      {
+        "name": "put",
+        "wire": "ItemsPut",
+        "result": "Item",
+        "args": [
+          [
+            "Item",
+            "item",
+            "item"
+          ]
+        ],
+        "doc": "Update an existing item."
+      },
+      {
+        "name": "delete",
+        "wire": "ItemsDelete",
+        "result": "void",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "String",
+            "itemId",
+            "item_id"
+          ]
+        ],
+        "doc": "Delete an item."
+      },
+      {
+        "name": "deleteAll",
+        "wire": "ItemsDeleteAll",
+        "result": "ItemsDeleteAllResponse",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "List<String>",
+            "itemIds",
+            "item_ids"
+          ]
+        ],
+        "doc": "Delete items in batch, within a single vault."
+      },
+      {
+        "name": "archive",
+        "wire": "ItemsArchive",
+        "result": "void",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "String",
+            "itemId",
+            "item_id"
+          ]
+        ],
+        "doc": "Archive an item."
+      },
+      {
+        "name": "list",
+        "wire": "ItemsList",
+        "result": "List<ItemOverview>",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "ItemListFilter...",
+            "filters",
+            "filters"
+          ]
+        ],
+        "doc": "List items based on filters."
+      }
+    ],
+    "ItemsFiles": [
+      {
+        "name": "attach",
+        "wire": "ItemsFilesAttach",
+        "result": "Item",
+        "args": [
+          [
+            "Item",
+            "item",
+            "item"
+          ],
+          [
+            "FileCreateParams",
+            "fileParams",
+            "file_params"
+          ]
+        ],
+        "doc": "Attach files to Items."
+      },
+      {
+        "name": "read",
+        "wire": "ItemsFilesRead",
+        "result": "byte[]",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "String",
+            "itemId",
+            "item_id"
+          ],
+          [
+            "FileAttributes",
+            "attr",
+            "attr"
+          ]
+        ],
+        "doc": "Read file content from the Item."
+      },
+      {
+        "name": "delete",
+        "wire": "ItemsFilesDelete",
+        "result": "Item",
+        "args": [
+          [
+            "Item",
+            "item",
+            "item"
+          ],
+          [
+            "String",
+            "sectionId",
+            "section_id"
+          ],
+          [
+            "String",
+            "fieldId",
+            "field_id"
+          ]
+        ],
+        "doc": "Delete a field file from Item using the section and field IDs."
+      },
+      {
+        "name": "replaceDocument",
+        "wire": "ItemsFilesReplaceDocument",
+        "result": "Item",
+        "args": [
+          [
+            "Item",
+            "item",
+            "item"
+          ],
+          [
+            "DocumentCreateParams",
+            "docParams",
+            "doc_params"
+          ]
+        ],
+        "doc": "Replace the document file within a document item."
+      }
+    ],
+    "ItemsShares": [
+      {
+        "name": "getAccountPolicy",
+        "wire": "ItemsSharesGetAccountPolicy",
+        "result": "ItemShareAccountPolicy",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "String",
+            "itemId",
+            "item_id"
+          ]
+        ],
+        "doc": "Get the item sharing policy of your account."
+      },
+      {
+        "name": "validateRecipients",
+        "wire": "ItemsSharesValidateRecipients",
+        "result": "List<ValidRecipient>",
+        "args": [
+          [
+            "ItemShareAccountPolicy",
+            "policy",
+            "policy"
+          ],
+          [
+            "List<String>",
+            "recipients",
+            "recipients"
+          ]
+        ],
+        "doc": "Validate the recipients of an item sharing link."
+      },
+      {
+        "name": "create",
+        "wire": "ItemsSharesCreate",
+        "result": "String",
+        "args": [
+          [
+            "Item",
+            "item",
+            "item"
+          ],
+          [
+            "ItemShareAccountPolicy",
+            "policy",
+            "policy"
+          ],
+          [
+            "ItemShareParams",
+            "params",
+            "params"
+          ]
+        ],
+        "doc": "Create a new item sharing link."
+      }
+    ],
+    "Vaults": [
+      {
+        "name": "create",
+        "wire": "VaultsCreate",
+        "result": "Vault",
+        "args": [
+          [
+            "VaultCreateParams",
+            "params",
+            "params"
+          ]
+        ],
+        "doc": "Create a new user vault."
+      },
+      {
+        "name": "list",
+        "wire": "VaultsList",
+        "result": "List<VaultOverview>",
+        "args": [
+          [
+            "VaultListParams",
+            "params",
+            "params"
+          ]
+        ],
+        "doc": "List information about vaults that's configurable based on some input parameters.",
+        "nullable": [
+          "params"
+        ]
+      },
+      {
+        "name": "getOverview",
+        "wire": "VaultsGetOverview",
+        "result": "VaultOverview",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ]
+        ],
+        "doc": "Get an overview of a vault by its ID."
+      },
+      {
+        "name": "get",
+        "wire": "VaultsGet",
+        "result": "Vault",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "VaultGetParams",
+            "vaultParams",
+            "vault_params"
+          ]
+        ],
+        "doc": "Get detailed vault information by vault ID and parameters."
+      },
+      {
+        "name": "update",
+        "wire": "VaultsUpdate",
+        "result": "Vault",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "VaultUpdateParams",
+            "params",
+            "params"
+          ]
+        ],
+        "doc": "Update a vault"
+      },
+      {
+        "name": "delete",
+        "wire": "VaultsDelete",
+        "result": "void",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ]
+        ],
+        "doc": "Delete a vault by its ID."
+      },
+      {
+        "name": "grantGroupPermissions",
+        "wire": "VaultsGrantGroupPermissions",
+        "result": "void",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "List<GroupAccess>",
+            "groupPermissionsList",
+            "group_permissions_list"
+          ]
+        ],
+        "doc": "Grant group permissions to a vault."
+      },
+      {
+        "name": "updateGroupPermissions",
+        "wire": "VaultsUpdateGroupPermissions",
+        "result": "void",
+        "args": [
+          [
+            "List<GroupVaultAccess>",
+            "groupPermissionsList",
+            "group_permissions_list"
+          ]
+        ],
+        "doc": "Update group permissions for vaults."
+      },
+      {
+        "name": "revokeGroupPermissions",
+        "wire": "VaultsRevokeGroupPermissions",
+        "result": "void",
+        "args": [
+          [
+            "String",
+            "vaultId",
+            "vault_id"
+          ],
+          [
+            "String",
+            "groupId",
+            "group_id"
+          ]
+        ],
+        "doc": "Revoke group permissions from a vault."
+      }
+    ],
+    "Groups": [
+      {
+        "name": "get",
+        "wire": "GroupsGet",
+        "result": "Group",
+        "args": [
+          [
+            "String",
+            "groupId",
+            "group_id"
+          ],
+          [
+            "GroupGetParams",
+            "groupParams",
+            "group_params"
+          ]
+        ],
+        "doc": "Get a group by its ID and parameters."
+      }
+    ],
+    "Environments": [
+      {
+        "name": "getVariables",
+        "wire": "EnvironmentsGetVariables",
+        "result": "GetVariablesResponse",
+        "args": [
+          [
+            "String",
+            "environmentId",
+            "environment_id"
+          ]
+        ],
+        "doc": "Get environment variables belonging to an Environment."
+      }
+    ]
+  }
+}

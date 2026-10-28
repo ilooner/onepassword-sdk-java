@@ -1,0 +1,83 @@
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+
+// Download an immutable upstream artifact only when explicitly requested.
+def manifest = new JsonSlurper().parse(file('gradle/native-libraries.json'))
+def os = System.getProperty('os.name').toLowerCase(Locale.ROOT)
+def arch = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
+def platformOs = os.contains('mac') ? 'macos' : os.contains('win') ? 'windows' : 'linux'
+def platformArch = arch in ['arm64', 'aarch64'] ? 'aarch64' : arch in ['amd64', 'x86_64'] ? 'x86_64' : arch
+def targetPlatform = providers.gradleProperty('nativePlatform').getOrElse("${platformOs}-${platformArch}")
+def nativeEntry = manifest.platforms[targetPlatform]
+def nativeDirectory = layout.buildDirectory.dir("native/${targetPlatform}")
+
+tasks.register('downloadNative') {
+    group = 'build setup'
+    description = 'Downloads and verifies the pinned 1Password native core for this platform.'
+    inputs.file 'gradle/native-libraries.json'
+    inputs.property 'platform', targetPlatform
+    outputs.dir nativeDirectory
+    doLast {
+        if (nativeEntry == null) {
+            throw new GradleException("Unsupported native platform: ${targetPlatform}")
+        }
+        def destination = nativeDirectory.get().file(nativeEntry.filename).asFile
+        destination.parentFile.mkdirs()
+        def temporary = new File(destination.parentFile, "${nativeEntry.filename}.part")
+        try {
+            def url = "https://raw.githubusercontent.com/1Password/onepassword-sdk-python/${manifest.commit}/src/onepassword/lib/${nativeEntry.architecture}/${nativeEntry.filename}"
+            def connection = new URI(url).toURL().openConnection()
+            connection.connectTimeout = 30_000
+            connection.readTimeout = 60_000
+            def digest = MessageDigest.getInstance('SHA-256')
+            connection.inputStream.withCloseable { input ->
+                temporary.withOutputStream { output ->
+                    byte[] buffer = new byte[65536]
+                    int count
+                    while ((count = input.read(buffer)) != -1) {
+                        digest.update(buffer, 0, count)
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+            if (digest.digest().encodeHex().toString() != nativeEntry.sha256) {
+                throw new GradleException('Native core SHA-256 verification failed')
+            }
+            java.nio.file.Files.move(temporary.toPath(), destination.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            temporary.delete()
+        }
+    }
+}
+
+tasks.register('nativeJar', Jar) {
+    group = 'build'
+    description = 'Packages the pinned native core in a separate platform-specific JAR.'
+    dependsOn 'downloadNative'
+    archiveClassifier = "native-${targetPlatform}"
+    from(nativeDirectory) { into "native/${targetPlatform}" }
+    from(['LICENSE', 'THIRD_PARTY_NOTICES.md']) { into 'META-INF' }
+}
+
+tasks.register('nativeTest', Test) {
+    group = 'verification'
+    description = 'Exercises the real native ABI and offline core operations; no account required.'
+    dependsOn 'downloadNative', 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'native' }
+    doFirst {
+        systemProperty 'onepassword.native.path', nativeDirectory.get().file(nativeEntry.filename).asFile.absolutePath
+    }
+}
+
+tasks.register('packagedNativeTest', Test) {
+    group = 'verification'
+    description = 'Checks native loading from the platform JAR, including resource extraction.'
+    dependsOn 'nativeJar', 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath + files(tasks.named('nativeJar'))
+    useJUnitPlatform { includeTags 'native-packaged' }
+    environment 'ONEPASSWORD_NATIVE_LIBRARY', ''
+}

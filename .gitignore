@@ -1,0 +1,13 @@
+.gradle/
+build/
+out/
+*.class
+.idea/
+.serena/
+.codex/
+.env
+.env.*
+.vscode/
+*.iml
+.DS_Store
+hs_err_pid*

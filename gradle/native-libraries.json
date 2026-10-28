@@ -1,0 +1,32 @@
+{
+  "commit": "5de999bb10a7119d1393c3c8e37595453ce3213c",
+  "version": "0.4.2",
+  "build": "0040201",
+  "platforms": {
+    "macos-aarch64": {
+      "architecture": "aarch64",
+      "filename": "libop_uniffi_core.dylib",
+      "sha256": "3ba0983c6f4d1d666381348701fe433803d4906d4d6944b0d8acdd66ba8bc0b2"
+    },
+    "linux-aarch64": {
+      "architecture": "aarch64",
+      "filename": "libop_uniffi_core.so",
+      "sha256": "e5238beee526bfc6cc8a59d136a95ad062a433969c5b4c5af4d74924b533eae3"
+    },
+    "macos-x86_64": {
+      "architecture": "x86_64",
+      "filename": "libop_uniffi_core.dylib",
+      "sha256": "9f427cef655bb06e58ca633679113e37d217f226bd873712dacb6e800a439d1f"
+    },
+    "linux-x86_64": {
+      "architecture": "x86_64",
+      "filename": "libop_uniffi_core.so",
+      "sha256": "d030d05c5dca54f82c6cf8a4c00e82b19734d1ce6f5dfa2e5702c3cd2cd060d7"
+    },
+    "windows-x86_64": {
+      "architecture": "x86_64",
+      "filename": "op_uniffi_core.dll",
+      "sha256": "6441ad9da34d51801cbf5f89f0a5908b5b8f86179c21a01407d6442804e5b1c5"
+    }
+  }
+}
