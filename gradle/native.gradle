@@ -1,63 +1,79 @@
 import groovy.json.JsonSlurper
 import java.security.MessageDigest
 
-// Download an immutable upstream artifact only when explicitly requested.
+// Download immutable upstream artifacts only when explicitly requested.
 def manifest = new JsonSlurper().parse(file('gradle/native-libraries.json'))
 def os = System.getProperty('os.name').toLowerCase(Locale.ROOT)
 def arch = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
 def platformOs = os.contains('mac') ? 'macos' : os.contains('win') ? 'windows' : 'linux'
 def platformArch = arch in ['arm64', 'aarch64'] ? 'aarch64' : arch in ['amd64', 'x86_64'] ? 'x86_64' : arch
-def targetPlatform = providers.gradleProperty('nativePlatform').getOrElse("${platformOs}-${platformArch}")
-def nativeEntry = manifest.platforms[targetPlatform]
+String targetPlatform = providers.gradleProperty('nativePlatform').getOrElse("${platformOs}-${platformArch}")
+if (!manifest.platforms.containsKey(targetPlatform)) {
+    throw new GradleException("Unsupported native platform: ${targetPlatform}")
+}
 def nativeDirectory = layout.buildDirectory.dir("native/${targetPlatform}")
+def nativeEntry = manifest.platforms[targetPlatform]
 
-tasks.register('downloadNative') {
-    group = 'build setup'
-    description = 'Downloads and verifies the pinned 1Password native core for this platform.'
-    inputs.file 'gradle/native-libraries.json'
-    inputs.property 'platform', targetPlatform
-    outputs.dir nativeDirectory
-    doLast {
-        if (nativeEntry == null) {
-            throw new GradleException("Unsupported native platform: ${targetPlatform}")
-        }
-        def destination = nativeDirectory.get().file(nativeEntry.filename).asFile
-        destination.parentFile.mkdirs()
-        def temporary = new File(destination.parentFile, "${nativeEntry.filename}.part")
-        try {
-            def url = "https://raw.githubusercontent.com/1Password/onepassword-sdk-python/${manifest.commit}/src/onepassword/lib/${nativeEntry.architecture}/${nativeEntry.filename}"
-            def connection = new URI(url).toURL().openConnection()
-            connection.connectTimeout = 30_000
-            connection.readTimeout = 60_000
-            def digest = MessageDigest.getInstance('SHA-256')
-            connection.inputStream.withCloseable { input ->
-                temporary.withOutputStream { output ->
-                    byte[] buffer = new byte[65536]
-                    int count
-                    while ((count = input.read(buffer)) != -1) {
-                        digest.update(buffer, 0, count)
-                        output.write(buffer, 0, count)
+def registerNative = { String platform, entry ->
+    def suffix = platform.split(/[-_]/).collect { it.capitalize() }.join('')
+    def downloadName = platform == targetPlatform ? 'downloadNative' : "downloadNative${suffix}"
+    def jarName = platform == targetPlatform ? 'nativeJar' : "native${suffix}Jar"
+    def directory = layout.buildDirectory.dir("native/${platform}")
+
+    def download = tasks.register(downloadName) {
+        group = 'build setup'
+        description = "Downloads and verifies the pinned 1Password native core for ${platform}."
+        inputs.file 'gradle/native-libraries.json'
+        inputs.property 'platform', platform
+        outputs.dir directory
+        doLast {
+            def destination = directory.get().file(entry.filename).asFile
+            destination.parentFile.mkdirs()
+            def temporary = new File(destination.parentFile, "${entry.filename}.part")
+            try {
+                def url = "https://raw.githubusercontent.com/1Password/onepassword-sdk-python/${manifest.commit}/src/onepassword/lib/${entry.architecture}/${entry.filename}"
+                def connection = new URI(url).toURL().openConnection()
+                connection.connectTimeout = 30_000
+                connection.readTimeout = 60_000
+                def digest = MessageDigest.getInstance('SHA-256')
+                connection.inputStream.withCloseable { input ->
+                    temporary.withOutputStream { output ->
+                        byte[] buffer = new byte[65536]
+                        int count
+                        while ((count = input.read(buffer)) != -1) {
+                            digest.update(buffer, 0, count)
+                            output.write(buffer, 0, count)
+                        }
                     }
                 }
+                if (digest.digest().encodeHex().toString() != entry.sha256) {
+                    throw new GradleException("Native core SHA-256 verification failed for ${platform}")
+                }
+                java.nio.file.Files.move(temporary.toPath(), destination.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            } finally {
+                temporary.delete()
             }
-            if (digest.digest().encodeHex().toString() != nativeEntry.sha256) {
-                throw new GradleException('Native core SHA-256 verification failed')
-            }
-            java.nio.file.Files.move(temporary.toPath(), destination.toPath(),
-                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        } finally {
-            temporary.delete()
         }
+    }
+
+    tasks.register(jarName, Jar) {
+        group = 'build'
+        description = "Packages the pinned native core for ${platform}."
+        dependsOn download
+        archiveClassifier = "native-${platform}"
+        from(directory) { into "native/${platform}" }
     }
 }
 
-tasks.register('nativeJar', Jar) {
+ext.nativeArtifactTasks = manifest.platforms.collectEntries { platform, entry ->
+    [(platform): registerNative(platform, entry)]
+}
+
+tasks.register('allNativeJars') {
     group = 'build'
-    description = 'Packages the pinned native core in a separate platform-specific JAR.'
-    dependsOn 'downloadNative'
-    archiveClassifier = "native-${targetPlatform}"
-    from(nativeDirectory) { into "native/${targetPlatform}" }
-    from(['LICENSE', 'THIRD_PARTY_NOTICES.md']) { into 'META-INF' }
+    description = 'Packages all supported native platforms with verified upstream binaries.'
+    dependsOn nativeArtifactTasks.values()
 }
 
 tasks.register('nativeTest', Test) {

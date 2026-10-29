@@ -1,5 +1,6 @@
 package com.onepassword.sdk;
 
+import com.onepassword.sdk.internal.BuildInfo;
 import com.onepassword.sdk.internal.Checks;
 import com.onepassword.sdk.internal.DesktopCore;
 import com.onepassword.sdk.internal.Json;
@@ -16,7 +17,7 @@ import java.util.Objects;
  * Calls on a client are thread safe and serialized; use separate clients for parallel requests.
  */
 public final class Client implements AutoCloseable {
-    public static final String VERSION = "0.1.0-SNAPSHOT";
+    public static final String VERSION = BuildInfo.VERSION;
     private static final Cleaner CLEANER = Cleaner.create();
     private final Session session;
     private final Cleaner.Cleanable cleanable;

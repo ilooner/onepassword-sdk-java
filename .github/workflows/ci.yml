@@ -3,6 +3,18 @@ name: Build
 on:
   push:
   pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to test
+        required: false
+        type: string
+        default: ''
+      release-version:
+        description: Optional release version to build and test
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -17,11 +29,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
       - uses: gradle/actions/setup-gradle@v4
+      - name: Test release validation
+        if: runner.os == 'Linux' && matrix.java == '17'
+        run: python3 -B -m unittest discover -s .github/scripts -p 'test_*.py'
       - name: Build and test Java and native bindings
         shell: bash
-        run: ./gradlew build nativeTest packagedNativeTest --no-daemon
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          args=()
+          if [[ -n "$RELEASE_VERSION" ]]; then
+            args+=("-PreleaseVersion=$RELEASE_VERSION")
+          fi
+          ./gradlew build nativeTest packagedNativeTest "${args[@]}" --no-daemon

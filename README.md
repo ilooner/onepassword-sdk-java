@@ -44,7 +44,8 @@ dependencies {
 
 The Maven coordinates are `com.ilooner:onepassword-sdk-java` (group `com.ilooner`,
 artifact `onepassword-sdk-java`). These coordinates are for local publication;
-no Maven Central release is claimed.
+the release workflows also publish them to GitHub Packages. No Maven Central
+release is claimed.
 `publishToMavenLocal` includes the current platform's native JAR. To package or
 publish another platform, pass `-PnativePlatform=linux-x86_64`, for example.
 
@@ -221,6 +222,80 @@ Their source schema is `tools/sdk-schema.json`; update it alongside the pinned
 native ABI when upgrading upstream. The build does not require Python.
 Compilable examples are in [`examples/`](examples/), and generated API docs are in
 `build/docs/javadoc/` after `./gradlew build`.
+
+## Publishing releases
+
+The GitHub workflows are:
+
+- [`ci.yml`](.github/workflows/ci.yml): builds and tests Java 17 and 21 on Linux,
+  macOS, and Windows. It can also be called by the release workflow.
+- [`release.yml`](.github/workflows/release.yml): runs when a GitHub Release is
+  published, or manually through **Actions > Release > Run workflow**. It validates
+  the version tag, pins its commit, and requires the complete CI matrix to pass.
+- [`publish-artifacts.yml`](.github/workflows/publish-artifacts.yml): called by
+  the release workflow to build and verify the publication bundle, publish Maven
+  artifacts to GitHub Packages, and attach files to the existing GitHub Release.
+
+To publish, tag a commit containing these workflows with a version such as
+`v1.2.3` or `v1.2.3-rc.1`, push the tag, and publish its GitHub Release. The tag
+determines the Maven/JAR version and `Client.VERSION`; the development default
+remains `0.1.0-SNAPSHOT`. Snapshot tags and malformed version tags are rejected.
+
+Each release includes:
+
+- The Java binary JAR, `-sources.jar`, and `-javadoc.jar`.
+- Native classifier JARs for all five supported operating-system/CPU combinations.
+- Maven POM and Gradle module metadata, plus a `SHA256SUMS` file covering the bundle.
+
+Native libraries are packaged from the pinned upstream artifacts and their hashes
+are checked again before publication. Native libraries are not recompiled by this
+project. GitHub's source archives are available alongside the attached source JAR.
+
+For a dry run, manually select an existing version tag and leave **publish** set
+to **false** (the default). This runs CI and makes the complete bundle available
+as a workflow artifact for 30 days, without uploading to the release or package
+registry. To publish manually, select **true**; a published GitHub Release for that
+tag must already exist. Published Maven versions should be treated as immutable:
+use a new version tag for subsequent changes.
+
+Publishing uses the workflow's `GITHUB_TOKEN` with `contents: write` and
+`packages: write`; no additional repository secrets or personal credentials are
+stored in the project. Repository/organization policy must permit these token
+permissions. The registry URL is derived from `GITHUB_REPOSITORY`, so no owner
+identity is hardcoded in the build. This follows the
+[GitHub Packages Gradle publishing setup](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-gradle-registry).
+
+To consume a published version, add the repository below alongside `mavenCentral()`
+and use the `com.ilooner:onepassword-sdk-java:<version>` coordinates. Replace
+`OWNER/REPOSITORY` with the repository hosting the package. GitHub Packages requires
+authentication for downloads; use a token with package read access. Keep it in the
+environment or your local Gradle credentials, outside version control.
+
+```groovy
+repositories {
+    mavenCentral()
+    maven {
+        url = uri('https://maven.pkg.github.com/OWNER/REPOSITORY')
+        credentials {
+            username = System.getenv('GITHUB_ACTOR')
+            password = System.getenv('GITHUB_TOKEN')
+        }
+    }
+}
+```
+
+You can exercise the complete publication locally without uploading anything:
+
+```sh
+./gradlew releaseArtifacts publishMavenJavaPublicationToReleaseStagingRepository \
+    -PreleaseVersion=1.2.3 -PallNativePlatforms=true
+python3 .github/scripts/release.py verify 1.2.3
+```
+
+The downloadable bundle is staged under `build/release/`; a complete Maven
+repository is staged under `build/release-repository/`. The release workflow uses
+the explicit `publishMavenJavaPublicationToGitHubPackagesRepository` task for
+remote publication. Ordinary builds and local staging do not publish remotely.
 
 Licensed under MIT. See [LICENSE](LICENSE) and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for upstream attribution.

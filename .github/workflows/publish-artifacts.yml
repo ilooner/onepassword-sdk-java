@@ -1,0 +1,76 @@
+name: Publish source and binary artifacts
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Tested commit to publish
+        required: true
+        type: string
+      version:
+        description: Release version without the v prefix
+        required: true
+        type: string
+      tag:
+        description: Existing release tag
+        required: true
+        type: string
+      publish:
+        description: Whether to upload beyond the workflow's build artifacts
+        required: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check release version
+        run: |
+          test "$(python3 .github/scripts/release.py version "$RELEASE_TAG")" = "$RELEASE_VERSION"
+      - name: Check the destination release exists and is published
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')" = false
+      - name: Build all publication artifacts
+        run: |
+          ./gradlew releaseArtifacts -PreleaseVersion="$RELEASE_VERSION" -PallNativePlatforms=true --no-daemon
+          python3 .github/scripts/release.py verify "$RELEASE_VERSION"
+      - name: Retain artifacts for download and dry-run review
+        uses: actions/upload-artifact@v4
+        with:
+          name: onepassword-sdk-java-${{ inputs.version }}
+          path: build/release/*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+      - name: Publish Maven artifacts to GitHub Packages
+        if: inputs.publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository \
+            -PreleaseVersion="$RELEASE_VERSION" -PallNativePlatforms=true --no-daemon
+      - name: Attach source and binary artifacts to the GitHub Release
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" build/release/* --repo "$GITHUB_REPOSITORY" --clobber

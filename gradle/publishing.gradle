@@ -1,0 +1,89 @@
+import java.security.MessageDigest
+
+def allNativePlatforms = providers.gradleProperty('allNativePlatforms').getOrElse('false').toBoolean()
+def githubRepository = providers.environmentVariable('GITHUB_REPOSITORY').orNull
+def publicationVersion = project.version.toString()
+def artifactPrefix = "${project.name}-${publicationVersion}"
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            if (allNativePlatforms) {
+                nativeArtifactTasks.values().each { artifact it }
+            } else {
+                artifact tasks.named('nativeJar')
+            }
+            pom {
+                name = '1Password SDK for Java (community)'
+                description = 'Java bindings for the 1Password SDK core.'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        // Local staging permits end-to-end publication validation without credentials.
+        maven {
+            name = 'ReleaseStaging'
+            url = layout.buildDirectory.dir('release-repository')
+        }
+        if (githubRepository != null) {
+            maven {
+                name = 'GitHubPackages'
+                url = uri("https://maven.pkg.github.com/${githubRepository.toLowerCase(Locale.ROOT)}")
+                credentials {
+                    username = providers.environmentVariable('GITHUB_ACTOR').orNull
+                    password = providers.environmentVariable('GITHUB_TOKEN').orNull
+                }
+            }
+        }
+    }
+}
+
+tasks.withType(PublishToMavenRepository).configureEach {
+    if (repository.name == 'GitHubPackages') {
+        doFirst {
+            if (publicationVersion.toUpperCase(Locale.ROOT).endsWith('-SNAPSHOT')) {
+                throw new GradleException('GitHub Packages publication requires a release version')
+            }
+            if (!allNativePlatforms) {
+                throw new GradleException('GitHub Packages publication requires -PallNativePlatforms=true')
+            }
+        }
+    }
+}
+
+tasks.register('releaseArtifacts', Sync) {
+    group = 'distribution'
+    description = 'Stages source, binary, native, and Maven metadata artifacts with SHA-256 checksums.'
+    into layout.buildDirectory.dir('release')
+    from tasks.named('jar'), tasks.named('sourcesJar'), tasks.named('javadocJar')
+    from nativeArtifactTasks.values()
+    from(tasks.named('generatePomFileForMavenJavaPublication')) {
+        rename { "${artifactPrefix}.pom" }
+    }
+    from(tasks.named('generateMetadataFileForMavenJavaPublication')) {
+        rename { "${artifactPrefix}.module" }
+    }
+    doLast {
+        def directory = destinationDir
+        def entries = directory.listFiles().findAll { it.name != 'SHA256SUMS' }.sort { it.name }
+        def checksums = entries.collect { entry ->
+            def digest = MessageDigest.getInstance('SHA-256')
+            entry.withInputStream { input ->
+                byte[] buffer = new byte[65536]
+                int count
+                while ((count = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, count)
+                }
+            }
+            "${digest.digest().encodeHex()}  ${entry.name}"
+        }
+        new File(directory, 'SHA256SUMS').text = checksums.join('\n') + '\n'
+    }
+}
