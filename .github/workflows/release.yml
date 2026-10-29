@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag, such as v1.2.3 or v1.2.3-rc.1
+        description: Version tag, such as v1.2.3 (dry runs use the selected branch if the tag is missing)
         required: true
         type: string
       publish:
@@ -29,18 +29,22 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       commit: ${{ steps.release.outputs.commit }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          ref: refs/tags/${{ github.event.release.tag_name || inputs.tag }}
+          ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - name: Validate release tag and pin the commit
         id: release
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == false }}
         run: |
-          version=$(python3 .github/scripts/release.py version "$RELEASE_TAG")
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-          printf 'commit=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          args=()
+          if [[ "$DRY_RUN" == true ]]; then
+            args+=(--allow-missing-tag)
+          fi
+          python3 .github/scripts/release.py prepare "$RELEASE_TAG" "${args[@]}" >> "$GITHUB_OUTPUT"
 
   verify:
     needs: prepare

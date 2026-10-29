@@ -4,6 +4,8 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from zipfile import ZipFile
@@ -29,6 +31,34 @@ def version_from_tag(tag):
     if not tag.startswith("v"):
         raise ValueError("Release tags must start with v, for example v1.2.3")
     return validate_version(tag[1:])
+
+
+def prepare_release(tag, allow_missing_tag=False, repository=None):
+    """Resolve a tag to its commit, permitting HEAD only for a manual dry run."""
+    version = version_from_tag(tag)
+    repository = ROOT if repository is None else repository
+    reference = f"refs/tags/{tag}"
+    exists = subprocess.run(
+        ["git", "show-ref", "--verify", "--quiet", reference],
+        cwd=repository, capture_output=True, text=True,
+    )
+    if exists.returncode not in (0, 1):
+        raise ValueError("Unable to inspect release tags in the checkout")
+    tag_exists = exists.returncode == 0
+    if not tag_exists and not allow_missing_tag:
+        raise ValueError(
+            f"Tag {tag} does not exist on GitHub. Create it at the intended commit and push it "
+            f"(git tag {tag} <commit>; git push origin {tag}), then publish its GitHub Release. "
+            "For a build without a tag, run the workflow manually with publish=false."
+        )
+    commit_reference = f"{reference}^{{commit}}" if tag_exists else "HEAD^{commit}"
+    commit = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", commit_reference],
+        cwd=repository, capture_output=True, text=True,
+    )
+    if commit.returncode != 0:
+        raise ValueError(f"{reference if tag_exists else 'HEAD'} does not point to a commit")
+    return version, commit.stdout.strip(), tag_exists
 
 
 def verify(version, directory):
@@ -95,6 +125,9 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
     tag_parser = subparsers.add_parser("version")
     tag_parser.add_argument("tag")
+    prepare_parser = subparsers.add_parser("prepare")
+    prepare_parser.add_argument("tag")
+    prepare_parser.add_argument("--allow-missing-tag", action="store_true")
     verify_parser = subparsers.add_parser("verify")
     verify_parser.add_argument("version")
     verify_parser.add_argument("directory", type=Path, nargs="?", default=ROOT / "build/release")
@@ -102,6 +135,13 @@ def main():
     try:
         if args.command == "version":
             print(version_from_tag(args.tag))
+        elif args.command == "prepare":
+            version, commit, tag_exists = prepare_release(args.tag, args.allow_missing_tag)
+            if not tag_exists:
+                print(f"::notice::Tag {args.tag} does not exist; dry run will build selected commit {commit}. "
+                      "No tag or release will be created.", file=sys.stderr)
+            print(f"version={version}")
+            print(f"commit={commit}")
         else:
             verify(args.version, args.directory)
             print("Release artifacts, coordinates, versions, and native checksums verified")

@@ -1,5 +1,6 @@
 import hashlib
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,6 +22,57 @@ class ReleaseVersionTest(unittest.TestCase):
                     "v1.2.3;echo unexpected", "v$(echo unexpected)", "refs/heads/main"):
             with self.subTest(tag=tag), self.assertRaises(ValueError):
                 release.version_from_tag(tag)
+
+
+class ReleasePreparationTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.repository = Path(self.temporary.name)
+        self.git("init", "--quiet", "--initial-branch=main", "--template=")
+        self.git("commit", "--quiet", "--allow-empty", "-m", "First test commit")
+        self.first_commit = self.git("rev-parse", "HEAD")
+
+    def git(self, *args):
+        return subprocess.run(
+            ["git", "-c", "user.name=Test Contributor", "-c", "user.email=contributor@example.invalid",
+             "-c", "commit.gpgSign=false", "-c", "tag.gpgSign=false", *args],
+            cwd=self.repository, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
+    def test_missing_tag_uses_selected_commit_only_for_dry_runs(self):
+        self.assertEqual(("0.1.0", self.first_commit, False), release.prepare_release(
+            "v0.1.0", allow_missing_tag=True, repository=self.repository))
+        self.assertEqual("", self.git("tag", "--list"))
+
+    def test_missing_tag_blocks_publication_with_actionable_message(self):
+        with self.assertRaisesRegex(ValueError, "git push origin v0.1.0"):
+            release.prepare_release("v0.1.0", repository=self.repository)
+
+    def test_existing_lightweight_tag_wins_over_selected_branch(self):
+        self.git("tag", "v0.1.0")
+        self.git("commit", "--quiet", "--allow-empty", "-m", "Later test commit")
+        self.assertNotEqual(self.first_commit, self.git("rev-parse", "HEAD"))
+        for allow_missing_tag in (True, False):
+            self.assertEqual(("0.1.0", self.first_commit, True), release.prepare_release(
+                "v0.1.0", allow_missing_tag=allow_missing_tag, repository=self.repository))
+
+    def test_annotated_tag_resolves_to_commit_not_tag_object(self):
+        self.git("tag", "-a", "v0.1.0", "-m", "Annotated test release")
+        self.assertNotEqual(self.first_commit, self.git("rev-parse", "refs/tags/v0.1.0"))
+        self.assertEqual(("0.1.0", self.first_commit, True),
+                         release.prepare_release("v0.1.0", repository=self.repository))
+
+    def test_non_commit_tag_never_falls_back_to_selected_branch(self):
+        self.git("tag", "v0.1.0", "HEAD^{tree}")
+        with self.assertRaisesRegex(ValueError, "does not point to a commit"):
+            release.prepare_release("v0.1.0", allow_missing_tag=True, repository=self.repository)
+
+    def test_invalid_tag_is_rejected_before_running_git(self):
+        with patch.object(release.subprocess, "run") as git:
+            with self.assertRaises(ValueError):
+                release.prepare_release("v0.1.0;echo unexpected", repository=self.repository)
+            git.assert_not_called()
 
 
 class ReleaseBundleTest(unittest.TestCase):

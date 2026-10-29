@@ -251,12 +251,28 @@ Native libraries are packaged from the pinned upstream artifacts and their hashe
 are checked again before publication. Native libraries are not recompiled by this
 project. GitHub's source archives are available alongside the attached source JAR.
 
-For a dry run, manually select an existing version tag and leave **publish** set
-to **false** (the default). This runs CI and makes the complete bundle available
-as a workflow artifact for 30 days, without uploading to the release or package
-registry. To publish manually, select **true**; a published GitHub Release for that
-tag must already exist. Published Maven versions should be treated as immutable:
-use a new version tag for subsequent changes.
+For a dry run, select a branch under **Use workflow from**, enter a version tag
+such as `v0.1.0`, and leave **publish** set to **false** (the default). If the tag
+exists, the workflow builds that tag's commit; otherwise it builds the selected
+branch's commit. It runs CI and makes the complete bundle available as a workflow
+artifact for 30 days, without creating a tag or uploading to the release or
+package registry.
+
+To publish manually, select **true**; the tag must already have been pushed and a
+published GitHub Release for that tag must exist. You can create both in GitHub
+under **Releases > Draft a new release**: choose a new tag such as `v0.1.0`, select
+the intended target commit, then publish the release. This also triggers the
+release workflow automatically. Alternatively, create and push the tag with Git
+before publishing its GitHub Release:
+
+```sh
+git tag v0.1.0 <release-commit>
+git push origin v0.1.0
+```
+
+Entering a tag name in the manual workflow form does not create that tag.
+Published Maven versions should be treated as immutable: use a new version tag
+for subsequent changes.
 
 Publishing uses the workflow's `GITHUB_TOKEN` with `contents: write` and
 `packages: write`; no additional repository secrets or personal credentials are
