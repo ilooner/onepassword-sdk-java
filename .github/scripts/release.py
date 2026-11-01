@@ -3,9 +3,12 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from zipfile import ZipFile
@@ -34,7 +37,7 @@ def version_from_tag(tag):
 
 
 def prepare_release(tag, allow_missing_tag=False, repository=None):
-    """Resolve a tag to its commit, permitting HEAD only for a manual dry run."""
+    """Resolve an existing tag, or select HEAD for a new manual release."""
     version = version_from_tag(tag)
     repository = ROOT if repository is None else repository
     reference = f"refs/tags/{tag}"
@@ -47,9 +50,8 @@ def prepare_release(tag, allow_missing_tag=False, repository=None):
     tag_exists = exists.returncode == 0
     if not tag_exists and not allow_missing_tag:
         raise ValueError(
-            f"Tag {tag} does not exist on GitHub. Create it at the intended commit and push it "
-            f"(git tag {tag} <commit>; git push origin {tag}), then publish its GitHub Release. "
-            "For a build without a tag, run the workflow manually with publish=false."
+            f"Tag {tag} does not exist on GitHub. Run the workflow manually to select a branch "
+            "commit; publish=true will create the tag after verification."
         )
     commit_reference = f"{reference}^{{commit}}" if tag_exists else "HEAD^{commit}"
     commit = subprocess.run(
@@ -59,6 +61,111 @@ def prepare_release(tag, allow_missing_tag=False, repository=None):
     if commit.returncode != 0:
         raise ValueError(f"{reference if tag_exists else 'HEAD'} does not point to a commit")
     return version, commit.stdout.strip(), tag_exists
+
+
+class GitHubError(RuntimeError):
+    def __init__(self, status, message):
+        super().__init__(f"GitHub API returned HTTP {status}: {message}")
+        self.status = status
+
+
+class GitHubAPI:
+    def __init__(self, repository, token, api_url="https://api.github.com"):
+        if not repository or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+            raise ValueError("GITHUB_REPOSITORY must identify the release repository")
+        if not token:
+            raise ValueError("GH_TOKEN or GITHUB_TOKEN is required for publication")
+        if not api_url.startswith("https://"):
+            raise ValueError("GITHUB_API_URL must use HTTPS")
+        self.base_url = f"{api_url.rstrip('/')}/repos/{repository}"
+        self.token = token
+
+    def request(self, method, path, data=None, missing_ok=False):
+        request = urllib.request.Request(
+            f"{self.base_url}/{path}",
+            data=json.dumps(data).encode() if data is not None else None,
+            method=method,
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "Accept": "application/vnd.github+json",
+                "Content-Type": "application/json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            if method == "GET" and missing_ok and error.code == 404:
+                return None
+            # Do not log request headers, tokens, or response bodies.
+            raise GitHubError(error.code, error.reason) from None
+
+
+def require_tag_commit(github, reference, commit):
+    """Peel annotated tags and refuse to move any existing tag."""
+    target = reference["object"]
+    visited = set()
+    while target["type"] == "tag":
+        if target["sha"] in visited:
+            raise ValueError("Release tag contains a reference cycle")
+        visited.add(target["sha"])
+        target = github.request("GET", f"git/tags/{target['sha']}")["object"]
+    if target["type"] != "commit" or target["sha"] != commit:
+        raise ValueError("Release tag points to a different commit; it will not be moved. "
+                         "Run again to verify that commit, or choose a new version tag.")
+
+
+def ensure_remote_tag(github, tag, commit):
+    version_from_tag(tag)
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("The release must be pinned to a full commit SHA")
+    path = f"git/ref/tags/{tag}"
+    reference = github.request("GET", path, missing_ok=True)
+    if reference is None:
+        try:
+            reference = github.request("POST", "git/refs", {"ref": f"refs/tags/{tag}", "sha": commit})
+        except GitHubError as error:
+            if error.status not in (409, 422):
+                raise
+            # Another actor may have created the tag while CI was running.
+            reference = github.request("GET", path, missing_ok=True)
+            if reference is None:
+                raise error
+    require_tag_commit(github, reference, commit)
+
+
+def find_github_release(github, tag):
+    # Listing includes drafts visible to the workflow token, allowing interrupted runs to resume.
+    page = 1
+    while True:
+        releases = github.request("GET", f"releases?per_page=100&page={page}")
+        for item in releases:
+            if item["tag_name"] == tag:
+                return item
+        if len(releases) < 100:
+            return None
+        page += 1
+
+
+def ensure_github_release(github, tag, commit):
+    ensure_remote_tag(github, tag, commit)
+    existing = find_github_release(github, tag)
+    if existing is not None:
+        return existing
+    try:
+        return github.request("POST", "releases", {
+            "tag_name": tag, "target_commitish": commit, "name": tag,
+            "body": f"Java SDK {version_from_tag(tag)}", "draft": True,
+            "prerelease": "-" in version_from_tag(tag),
+        })
+    except GitHubError as error:
+        if error.status not in (409, 422):
+            raise
+        existing = find_github_release(github, tag)
+        if existing is None:
+            raise error
+        return existing
 
 
 def verify(version, directory):
@@ -128,6 +235,9 @@ def main():
     prepare_parser = subparsers.add_parser("prepare")
     prepare_parser.add_argument("tag")
     prepare_parser.add_argument("--allow-missing-tag", action="store_true")
+    ensure_parser = subparsers.add_parser("ensure-release")
+    ensure_parser.add_argument("tag")
+    ensure_parser.add_argument("commit")
     verify_parser = subparsers.add_parser("verify")
     verify_parser.add_argument("version")
     verify_parser.add_argument("directory", type=Path, nargs="?", default=ROOT / "build/release")
@@ -138,15 +248,26 @@ def main():
         elif args.command == "prepare":
             version, commit, tag_exists = prepare_release(args.tag, args.allow_missing_tag)
             if not tag_exists:
-                print(f"::notice::Tag {args.tag} does not exist; dry run will build selected commit {commit}. "
-                      "No tag or release will be created.", file=sys.stderr)
+                print(f"::notice::Tag {args.tag} does not exist; selected commit {commit} will be used. "
+                      "Publishing will create the tag after verification; dry runs leave it unchanged.", file=sys.stderr)
             print(f"version={version}")
             print(f"commit={commit}")
+        elif args.command == "ensure-release":
+            github = GitHubAPI(os.environ.get("GITHUB_REPOSITORY"),
+                               os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"),
+                               os.environ.get("GITHUB_API_URL", "https://api.github.com"))
+            result = ensure_github_release(github, args.tag, args.commit)
+            print(f"release-id={int(result['id'])}")
+            print(f"release-draft={str(bool(result['draft'])).lower()}")
         else:
             verify(args.version, args.directory)
             print("Release artifacts, coordinates, versions, and native checksums verified")
-    except (ValueError, KeyError, OSError, ET.ParseError) as error:
-        parser.exit(1, f"Release validation failed: {error}\n")
+    except (ValueError, KeyError, OSError, GitHubError, ET.ParseError) as error:
+        message = f"Release failed: {error}"
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            escaped = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error::{escaped}", file=sys.stderr)
+        parser.exit(1, message + "\n")
 
 
 if __name__ == "__main__":

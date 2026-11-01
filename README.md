@@ -233,13 +233,22 @@ The GitHub workflows are:
   published, or manually through **Actions > Release > Run workflow**. It validates
   the version tag, pins its commit, and requires the complete CI matrix to pass.
 - [`publish-artifacts.yml`](.github/workflows/publish-artifacts.yml): called by
-  the release workflow to build and verify the publication bundle, publish Maven
-  artifacts to GitHub Packages, and attach files to the existing GitHub Release.
+  the release workflow to build and verify the publication bundle, create a missing
+  tag and GitHub Release, publish Maven artifacts to GitHub Packages, and attach
+  the release files.
 
-To publish, tag a commit containing these workflows with a version such as
-`v1.2.3` or `v1.2.3-rc.1`, push the tag, and publish its GitHub Release. The tag
-determines the Maven/JAR version and `Client.VERSION`; the development default
-remains `0.1.0-SNAPSHOT`. Snapshot tags and malformed version tags are rejected.
+To publish a new version, open **Actions > Release > Run workflow**, select the
+branch under **Use workflow from**, enter a version tag such as `v0.1.1`, and set
+**publish** to **true**. No tag or GitHub Release needs to exist beforehand.
+
+If the tag is missing, the workflow pins the branch's latest commit when the run
+starts, runs CI, builds the artifacts, and creates the tag at that verified commit.
+Commits pushed while CI runs are left for a subsequent release. If the tag already
+exists, its commit is used and the tag is never moved. A tag created concurrently
+on a different commit causes publication to stop instead of retagging it.
+
+The tag determines the Maven/JAR version and `Client.VERSION`; the development
+default remains `0.1.0-SNAPSHOT`. Snapshot tags and malformed version tags are rejected.
 
 Each release includes:
 
@@ -258,21 +267,14 @@ branch's commit. It runs CI and makes the complete bundle available as a workflo
 artifact for 30 days, without creating a tag or uploading to the release or
 package registry.
 
-To publish manually, select **true**; the tag must already have been pushed and a
-published GitHub Release for that tag must exist. You can create both in GitHub
-under **Releases > Draft a new release**: choose a new tag such as `v0.1.0`, select
-the intended target commit, then publish the release. This also triggers the
-release workflow automatically. Alternatively, create and push the tag with Git
-before publishing its GitHub Release:
+Publishing creates a missing GitHub Release as a draft, uploads the artifacts,
+and publishes the draft only after the upload and Maven publication succeed.
+Existing release notes are preserved. A retry reuses an existing tag and draft.
+Versions with a qualifier, such as `v0.1.1-rc.1`, are marked as prereleases.
 
-```sh
-git tag v0.1.0 <release-commit>
-git push origin v0.1.0
-```
-
-Entering a tag name in the manual workflow form does not create that tag.
-Published Maven versions should be treated as immutable: use a new version tag
-for subsequent changes.
+You can also create and publish a GitHub Release yourself to trigger the same
+workflow for its existing tag. Published Maven versions should be treated as
+immutable: use a new version tag for subsequent changes.
 
 Publishing uses the workflow's `GITHUB_TOKEN` with `contents: write` and
 `packages: write`; no additional repository secrets or personal credentials are

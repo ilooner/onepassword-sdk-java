@@ -1,10 +1,13 @@
 import hashlib
+import io
 import json
+import os
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
+import urllib.error
 from zipfile import ZipFile
 
 import release
@@ -40,13 +43,16 @@ class ReleasePreparationTest(unittest.TestCase):
             cwd=self.repository, check=True, capture_output=True, text=True,
         ).stdout.strip()
 
-    def test_missing_tag_uses_selected_commit_only_for_dry_runs(self):
-        self.assertEqual(("0.1.0", self.first_commit, False), release.prepare_release(
+    def test_missing_tag_selects_latest_branch_commit_without_creating_a_tag(self):
+        self.git("commit", "--quiet", "--allow-empty", "-m", "Latest test commit")
+        latest = self.git("rev-parse", "HEAD")
+        self.assertNotEqual(self.first_commit, latest)
+        self.assertEqual(("0.1.0", latest, False), release.prepare_release(
             "v0.1.0", allow_missing_tag=True, repository=self.repository))
         self.assertEqual("", self.git("tag", "--list"))
 
-    def test_missing_tag_blocks_publication_with_actionable_message(self):
-        with self.assertRaisesRegex(ValueError, "git push origin v0.1.0"):
+    def test_release_event_without_a_tag_explains_manual_creation(self):
+        with self.assertRaisesRegex(ValueError, "publish=true will create the tag"):
             release.prepare_release("v0.1.0", repository=self.repository)
 
     def test_existing_lightweight_tag_wins_over_selected_branch(self):
@@ -73,6 +79,127 @@ class ReleasePreparationTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 release.prepare_release("v0.1.0;echo unexpected", repository=self.repository)
             git.assert_not_called()
+
+
+class GitHubPublicationTest(unittest.TestCase):
+    COMMIT = "a" * 40
+    OTHER = "b" * 40
+    TAG = "v0.1.1"
+
+    def setUp(self):
+        self.github = Mock(spec=release.GitHubAPI)
+        self.reference = {"object": {"type": "commit", "sha": self.COMMIT}}
+        self.draft = {"id": 1, "tag_name": self.TAG, "draft": True}
+
+    def test_missing_tag_is_created_at_exact_tested_commit(self):
+        self.github.request.side_effect = [None, self.reference]
+        release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+        self.assertEqual([
+            call("GET", f"git/ref/tags/{self.TAG}", missing_ok=True),
+            call("POST", "git/refs", {"ref": f"refs/tags/{self.TAG}", "sha": self.COMMIT}),
+        ], self.github.request.call_args_list)
+
+    def test_existing_tag_is_reused_without_writes(self):
+        self.github.request.return_value = self.reference
+        release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+        self.github.request.assert_called_once_with("GET", f"git/ref/tags/{self.TAG}", missing_ok=True)
+
+    def test_existing_annotated_tag_is_peeled_and_preserved(self):
+        self.github.request.side_effect = [{"object": {"type": "tag", "sha": self.OTHER}}, self.reference]
+        release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+        self.github.request.assert_called_with("GET", f"git/tags/{self.OTHER}")
+        self.assertTrue(all(c.args[0] == "GET" for c in self.github.request.call_args_list))
+
+    def test_tag_on_another_commit_is_never_moved(self):
+        self.github.request.return_value = {"object": {"type": "commit", "sha": self.OTHER}}
+        with self.assertRaisesRegex(ValueError, "will not be moved"):
+            release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+        self.assertEqual(1, self.github.request.call_count)
+
+    def test_concurrent_tag_creation_at_same_commit_is_safe(self):
+        self.github.request.side_effect = [None, release.GitHubError(422, "Already exists"), self.reference]
+        release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+        self.assertEqual(3, self.github.request.call_count)
+
+    def test_concurrent_tag_creation_at_other_commit_fails(self):
+        self.github.request.side_effect = [None, release.GitHubError(422, "Already exists"),
+                                           {"object": {"type": "commit", "sha": self.OTHER}}]
+        with self.assertRaisesRegex(ValueError, "will not be moved"):
+            release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+
+    def test_permission_errors_do_not_trigger_more_writes(self):
+        self.github.request.side_effect = [None, release.GitHubError(403, "Forbidden")]
+        with self.assertRaises(release.GitHubError):
+            release.ensure_remote_tag(self.github, self.TAG, self.COMMIT)
+        self.assertEqual(2, self.github.request.call_count)
+
+    def test_publication_creates_a_draft_for_the_verified_tag(self):
+        self.github.request.side_effect = [None, self.reference, [], self.draft]
+        self.assertEqual(self.draft, release.ensure_github_release(self.github, self.TAG, self.COMMIT))
+        self.github.request.assert_called_with("POST", "releases", {
+            "tag_name": self.TAG, "target_commitish": self.COMMIT, "name": self.TAG,
+            "body": "Java SDK 0.1.1", "draft": True, "prerelease": False,
+        })
+
+    def test_prerelease_versions_are_marked_as_prereleases(self):
+        self.github.request.side_effect = [self.reference, [], self.draft]
+        release.ensure_github_release(self.github, "v0.1.1-rc.1", self.COMMIT)
+        self.assertTrue(self.github.request.call_args.args[2]["prerelease"])
+
+    def test_existing_draft_or_published_release_is_preserved(self):
+        for draft in (True, False):
+            existing = {**self.draft, "draft": draft, "body": "Existing release notes"}
+            self.github.request.reset_mock(side_effect=True)
+            self.github.request.side_effect = [self.reference, [existing]]
+            self.assertIs(existing, release.ensure_github_release(self.github, self.TAG, self.COMMIT))
+            self.assertTrue(all(c.args[0] == "GET" for c in self.github.request.call_args_list))
+
+    def test_release_created_concurrently_is_reused(self):
+        self.github.request.side_effect = [self.reference, [], release.GitHubError(422, "Already exists"), [self.draft]]
+        self.assertEqual(self.draft, release.ensure_github_release(self.github, self.TAG, self.COMMIT))
+
+    def test_release_lookup_includes_later_pages(self):
+        self.github.request.side_effect = [[{"tag_name": "other"}] * 100, [self.draft]]
+        self.assertEqual(self.draft, release.find_github_release(self.github, self.TAG))
+        self.github.request.assert_called_with("GET", "releases?per_page=100&page=2")
+
+    def test_invalid_commit_is_rejected_before_network_access(self):
+        with self.assertRaisesRegex(ValueError, "full commit SHA"):
+            release.ensure_remote_tag(self.github, self.TAG, "main")
+        self.github.request.assert_not_called()
+
+
+class GitHubAPITest(unittest.TestCase):
+    def test_request_sends_structured_json_and_uses_token_without_logging_it(self):
+        github = release.GitHubAPI("example/sdk", "test-token")
+        with patch.object(release.urllib.request, "urlopen", return_value=io.BytesIO(b'{"id":1}')) as open_url:
+            self.assertEqual({"id": 1}, github.request("POST", "git/refs", {"ref": "refs/tags/v1.0.0", "sha": "a" * 40}))
+            request = open_url.call_args.args[0]
+            self.assertEqual("https://api.github.com/repos/example/sdk/git/refs", request.full_url)
+            self.assertEqual("Bearer test-token", request.get_header("Authorization"))
+            self.assertEqual("POST", request.method)
+            self.assertEqual("a" * 40, json.loads(request.data)["sha"])
+
+    def test_only_a_get_404_can_mean_missing(self):
+        github = release.GitHubAPI("example/sdk", "test-token")
+        for method, status in (("GET", 404), ("GET", 403), ("POST", 404)):
+            error = urllib.error.HTTPError("https://api.github.com/example", status, "Request failed", {}, None)
+            with self.subTest(method=method, status=status), patch.object(release.urllib.request, "urlopen", side_effect=error):
+                if method == "GET" and status == 404:
+                    self.assertIsNone(github.request(method, "git/ref/tags/v1.0.0", missing_ok=True))
+                else:
+                    with self.assertRaises(release.GitHubError) as caught:
+                        github.request(method, "git/ref/tags/v1.0.0", missing_ok=True)
+                    self.assertNotIn("test-token", str(caught.exception))
+
+    def test_github_errors_are_visible_in_workflow_annotations(self):
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), \
+                patch.object(release.sys, "argv", ["release.py", "version", "invalid"]), \
+                patch.object(release.sys, "stderr", new_callable=io.StringIO) as stderr, \
+                self.assertRaises(SystemExit) as caught:
+            release.main()
+        self.assertEqual(1, caught.exception.code)
+        self.assertIn("::error::Release failed:", stderr.getvalue())
 
 
 class ReleaseBundleTest(unittest.TestCase):

@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag, such as v1.2.3 (dry runs use the selected branch if the tag is missing)
+        description: Version tag, such as v1.2.3 (created on the selected branch commit if missing)
         required: true
         type: string
       publish:
-        description: Publish to GitHub Packages and an existing published GitHub Release (false builds only)
+        description: Create missing tag/release and publish artifacts (false builds only)
         required: true
         type: boolean
         default: false
@@ -38,10 +38,10 @@ jobs:
         id: release
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == false }}
+          MANUAL_RUN: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           args=()
-          if [[ "$DRY_RUN" == true ]]; then
+          if [[ "$MANUAL_RUN" == true ]]; then
             args+=(--allow-missing-tag)
           fi
           python3 .github/scripts/release.py prepare "$RELEASE_TAG" "${args[@]}" >> "$GITHUB_OUTPUT"

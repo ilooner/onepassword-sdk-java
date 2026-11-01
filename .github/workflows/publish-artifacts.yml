@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       tag:
-        description: Version tag (must exist when publishing)
+        description: Version tag (created at the tested commit if missing)
         required: true
         type: string
       publish:
@@ -30,10 +30,18 @@ jobs:
     env:
       RELEASE_VERSION: ${{ inputs.version }}
       RELEASE_TAG: ${{ inputs.tag }}
+      RELEASE_COMMIT: ${{ inputs.ref }}
     steps:
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Check out publication helpers from the workflow revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tools
+          sparse-checkout: .github/scripts
           persist-credentials: false
       - uses: actions/setup-java@v5
         with:
@@ -42,13 +50,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
       - name: Check release version
         run: |
-          test "$(python3 .github/scripts/release.py version "$RELEASE_TAG")" = "$RELEASE_VERSION"
-      - name: Check the destination release exists and is published
-        if: inputs.publish
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')" = false
+          test "$(python3 .release-tools/.github/scripts/release.py version "$RELEASE_TAG")" = "$RELEASE_VERSION"
       - name: Build all publication artifacts
         run: |
           ./gradlew releaseArtifacts -PreleaseVersion="$RELEASE_VERSION" -PallNativePlatforms=true --no-daemon
@@ -61,6 +63,13 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
+      - name: Create missing tag and draft release at the tested commit
+        id: destination
+        if: inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 .release-tools/.github/scripts/release.py ensure-release "$RELEASE_TAG" "$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Publish Maven artifacts to GitHub Packages
         if: inputs.publish
         env:
@@ -74,3 +83,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$RELEASE_TAG" build/release/* --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Publish the release after its artifacts are attached
+        if: inputs.publish && steps.destination.outputs.release-draft == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --verify-tag
