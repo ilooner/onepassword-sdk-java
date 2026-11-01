@@ -35,7 +35,7 @@ public final class Client implements AutoCloseable {
                 "programmingLanguage", "Java", "sdkVersion", "0040201",
                 "integrationName", builder.integrationName, "integrationVersion", builder.integrationVersion,
                 "requestLibraryName", "reqwest", "requestLibraryVersion", "0.11.24",
-                "os", System.getProperty("os.name").toLowerCase(Locale.ROOT),
+                "os", operatingSystemName(),
                 "osVersion", System.getProperty("os.version"), "architecture", System.getProperty("os.arch"));
         if (!desktop) {
             config.put("serviceAccountToken", builder.serviceAccountToken);
@@ -47,6 +47,18 @@ public final class Client implements AutoCloseable {
         vaults = new Vaults(this, session);
         groups = new Groups(this, session);
         environments = new Environments(this, session);
+    }
+
+    private static String operatingSystemName() {
+        String operatingSystem = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        // The native user-agent builder expects OS families, not Java's display names.
+        if (operatingSystem.startsWith("mac") || operatingSystem.equals("darwin")) {
+            return "darwin";
+        }
+        if (operatingSystem.startsWith("windows")) {
+            return "windows";
+        }
+        return operatingSystem;
     }
 
     public static Builder builder() {

@@ -9,6 +9,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ClientTest {
     @Test
@@ -35,6 +39,43 @@ class ClientTest {
             assertEquals(core.firstId, core.invocations.get(0).at("/invocation/clientId").asText());
         }
         assertEquals(List.of(core.firstId), core.released);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"Mac OS X, darwin", "macOS, darwin", "Darwin, darwin",
+            "Windows 10, windows", "Windows 11, windows", "Windows Server 2022, windows", "Linux, linux"})
+    @ResourceLock(Resources.SYSTEM_PROPERTIES)
+    void normalizesOperatingSystemForServiceAccountAndDesktopClients(String operatingSystem, String expected) {
+        String originalOperatingSystem = System.getProperty("os.name");
+        try {
+            System.setProperty("os.name", operatingSystem);
+            for (boolean desktop : new boolean[]{false, true}) {
+                RecordingCore core = new RecordingCore();
+                Client.Builder builder = Client.builder().core(core).integration(operatingSystem, "1.0");
+                if (desktop) {
+                    builder.desktopAccount("account");
+                } else {
+                    builder.serviceAccountToken("test-token");
+                }
+                try (Client client = builder.build()) {
+                    assertNotNull(client.secrets());
+                    var configuration = core.configurations.get(0);
+                    assertEquals(expected, configuration.path("os").asText());
+                    assertEquals(operatingSystem, configuration.path("integrationName").asText());
+                    assertEquals(System.getProperty("os.version"), configuration.path("osVersion").asText());
+                    assertEquals(System.getProperty("os.arch"), configuration.path("architecture").asText());
+                    if (desktop) {
+                        assertFalse(configuration.has("serviceAccountToken"));
+                    } else {
+                        assertEquals("test-token", configuration.path("serviceAccountToken").asText());
+                    }
+                    assertEquals(operatingSystem, System.getProperty("os.name"));
+                }
+                assertEquals(List.of("41"), core.released);
+            }
+        } finally {
+            System.setProperty("os.name", originalOperatingSystem);
+        }
     }
 
     @Test
